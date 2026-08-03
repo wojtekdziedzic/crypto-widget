@@ -1,6 +1,7 @@
 .gradle/
 build/
 local.properties
+TIME_LOG.md
 keystore.properties
 *.jks
 *.keystore
