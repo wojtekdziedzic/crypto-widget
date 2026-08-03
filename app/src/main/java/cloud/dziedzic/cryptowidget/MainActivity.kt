@@ -254,7 +254,8 @@ private fun SegmentedRow(
             ) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurface,
                 )

@@ -5,7 +5,9 @@ import cloud.dziedzic.cryptowidget.R
 enum class Coin(val coinGeckoId: String, val symbol: String, val iconRes: Int) {
     BTC("bitcoin", "BTC", R.drawable.ic_btc),
     ETH("ethereum", "ETH", R.drawable.ic_eth),
-    XRP("ripple", "XRP", R.drawable.ic_xrp);
+    XRP("ripple", "XRP", R.drawable.ic_xrp),
+    XLM("stellar", "XLM", R.drawable.ic_xlm),
+    ONDO("ondo-finance", "ONDO", R.drawable.ic_ondo);
 
     companion object {
         val DEFAULT = XRP
