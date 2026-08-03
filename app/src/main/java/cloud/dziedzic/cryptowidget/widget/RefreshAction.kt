@@ -1,10 +1,10 @@
-package com.xrpwidget.widget
+package cloud.dziedzic.cryptowidget.widget
 
 import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
-import com.xrpwidget.work.RefreshScheduler
+import cloud.dziedzic.cryptowidget.work.RefreshScheduler
 
 class RefreshAction : ActionCallback {
 

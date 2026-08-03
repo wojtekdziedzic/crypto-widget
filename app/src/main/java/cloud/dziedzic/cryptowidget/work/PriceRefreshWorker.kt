@@ -1,11 +1,11 @@
-package com.xrpwidget.work
+package cloud.dziedzic.cryptowidget.work
 
 import android.content.Context
 import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.xrpwidget.data.PriceRepository
-import com.xrpwidget.widget.XrpPriceWidget
+import cloud.dziedzic.cryptowidget.data.PriceRepository
+import cloud.dziedzic.cryptowidget.widget.CryptoPriceWidget
 
 class PriceRefreshWorker(
     appContext: Context,
@@ -13,10 +13,10 @@ class PriceRefreshWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
-        val refreshResult = PriceRepository.get(applicationContext).refresh()
-        // Always redraw so the widget reflects whatever the cache holds,
+        val refreshResult = PriceRepository.get(applicationContext).refreshAll()
+        // Always redraw so widgets reflect whatever the cache holds,
         // including the "last known value" case after a network failure.
-        XrpPriceWidget().updateAll(applicationContext)
+        CryptoPriceWidget().updateAll(applicationContext)
         return when {
             refreshResult.isSuccess -> Result.success()
             runAttemptCount < MAX_RETRIES -> Result.retry()

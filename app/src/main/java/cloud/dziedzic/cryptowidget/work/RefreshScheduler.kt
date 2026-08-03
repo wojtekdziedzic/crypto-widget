@@ -1,4 +1,4 @@
-package com.xrpwidget.work
+package cloud.dziedzic.cryptowidget.work
 
 import android.content.Context
 import androidx.work.Constraints
@@ -12,8 +12,8 @@ import java.util.concurrent.TimeUnit
 
 object RefreshScheduler {
 
-    private const val PERIODIC_WORK_NAME = "xrp_price_periodic_refresh"
-    private const val MANUAL_WORK_NAME = "xrp_price_manual_refresh"
+    private const val PERIODIC_WORK_NAME = "crypto_price_periodic_refresh"
+    private const val MANUAL_WORK_NAME = "crypto_price_manual_refresh"
     private const val REFRESH_INTERVAL_MINUTES = 30L
 
     private val networkConstraint = Constraints.Builder()

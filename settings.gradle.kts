@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "xrp-widget"
+rootProject.name = "crypto-widget"
 include(":app")

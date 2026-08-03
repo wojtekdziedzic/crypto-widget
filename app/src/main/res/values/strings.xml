@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kurs XRP</string>
-    <string name="widget_label">Kurs XRP (PLN)</string>
-    <string name="widget_description">Kurs XRP w złotówkach, odświeżany co 30 minut</string>
-    <string name="xrp_symbol" translatable="false">XRP</string>
+    <string name="app_name">Kurs Krypto</string>
+    <string name="widget_label">Kurs Krypto</string>
+    <string name="widget_description">Kurs kryptowaluty, odświeżany co 30 minut</string>
     <string name="no_data" translatable="false">—</string>
-    <string name="cd_xrp_logo">Logo XRP</string>
+    <string name="cd_coin_logo">Logo kryptowaluty</string>
     <string name="cd_refresh">Odśwież kurs</string>
     <string name="refresh_now">Odśwież teraz</string>
     <string name="add_widget">Dodaj widget</string>
-    <string name="add_widget_hint">Przytrzymaj palec na pustym miejscu ekranu głównego, wybierz \"Widgety\", znajdź \"Kurs XRP\" i przeciągnij widget na ekran. Możesz też użyć przycisku poniżej. Rozmiar widgetu zmienisz, przytrzymując go i przeciągając uchwyty ramki.</string>
+    <string name="add_widget_hint">Przytrzymaj palec na pustym miejscu ekranu głównego, wybierz \"Widgety\", znajdź \"Kurs Krypto\" i przeciągnij widget na ekran, albo użyj przycisku \"Dodaj widget\". Rozmiar widgetu zmienisz, przytrzymując go i przeciągając uchwyty ramki.</string>
     <string name="updated_at">Zaktualizowano: %1$s</string>
     <string name="never_updated">Brak danych, kliknij \"Odśwież teraz\"</string>
-    <string name="last_price_title">Ostatni znany kurs</string>
+    <string name="chart_7d">Wykres 7 dni</string>
+    <string name="chart_unavailable">Wykres niedostępny</string>
+    <string name="config_title">Ustawienia widgetu</string>
+    <string name="config_coin">Kryptowaluta</string>
+    <string name="config_currency">Waluta</string>
+    <string name="config_save">Zapisz</string>
 </resources>
