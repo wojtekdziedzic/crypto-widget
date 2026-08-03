@@ -68,6 +68,13 @@ class WidgetConfigActivity : ComponentActivity() {
         lifecycleScope.launch {
             android.util.Log.d("CryptoWidgetConfig", "save id=$appWidgetId config=$config")
             WidgetConfigStore(this@WidgetConfigActivity).save(appWidgetId, config)
+            // Redraw this widget immediately so it shows the chosen coin right away
+            // (with a placeholder price until the worker fetches the quote).
+            runCatching {
+                val glanceId = androidx.glance.appwidget.GlanceAppWidgetManager(this@WidgetConfigActivity)
+                    .getGlanceIdBy(appWidgetId)
+                CryptoPriceWidget().update(this@WidgetConfigActivity, glanceId)
+            }
             // The worker fetches the (possibly new) pair and redraws all widgets.
             RefreshScheduler.refreshNow(this@WidgetConfigActivity)
             setResult(RESULT_OK, resultIntent())

@@ -54,20 +54,60 @@ class PriceRepository private constructor(
         Result.failure(e)
     }
 
-    /** 7-day price history for the chart; empty list on failure (no crash, no cache). */
-    suspend fun fetchChart(coin: Coin, currency: Currency, days: Int = 7): List<Float> = try {
-        api.getMarketChart(coin.coinGeckoId, currency.code, days)
-            .prices.mapNotNull { it.getOrNull(1)?.toFloat() }
+    private val chartCache =
+        mutableMapOf<Triple<Coin, Currency, ChartRange>, Pair<Long, List<Float>>>()
+
+    /**
+     * Price history for the chart. Served from a short in-memory cache when
+     * fresh (rate-limit friendly: rapid switching between selections does not
+     * hit the API); on failure returns the stale cached series if present,
+     * otherwise an empty list (no crash).
+     */
+    suspend fun fetchChart(coin: Coin, currency: Currency, range: ChartRange): List<Float> {
+        val key = Triple(coin, currency, range)
+        val cached = chartCache[key]
+        if (cached != null && System.currentTimeMillis() - cached.first < CHART_CACHE_TTL_MILLIS) {
+            return cached.second
+        }
+        return fetchChartRemote(coin, currency, range)
+            ?.also { chartCache[key] = System.currentTimeMillis() to it }
+            ?: cached?.second
+            ?: emptyList()
+    }
+
+    private suspend fun fetchChartRemote(
+        coin: Coin,
+        currency: Currency,
+        range: ChartRange,
+    ): List<Float>? = try {
+        val prices = api.getMarketChart(coin.coinGeckoId, currency.code, range.days).prices
+        val windowMillis = range.windowHours?.let { it * 3_600_000.0 }
+        val filtered = if (windowMillis != null && prices.isNotEmpty()) {
+            val cutoff = (prices.last().getOrNull(0) ?: 0.0) - windowMillis
+            prices.filter { (it.getOrNull(0) ?: 0.0) >= cutoff }
+        } else {
+            prices
+        }
+        val points = filtered.mapNotNull { it.getOrNull(1)?.toFloat() }
+        // Decimate long series (e.g. 90 days hourly = 2160 points) to keep drawing light.
+        if (points.size > MAX_CHART_POINTS) {
+            val stride = (points.size + MAX_CHART_POINTS - 1) / MAX_CHART_POINTS
+            points.filterIndexed { index, _ -> index % stride == 0 }
+        } else {
+            points
+        }
     } catch (e: CancellationException) {
         throw e
     } catch (e: Exception) {
         Log.w(TAG, "Chart fetch failed", e)
-        emptyList()
+        null
     }
 
     companion object {
         private const val TAG = "PriceRepository"
         private const val BASE_URL = "https://api.coingecko.com/"
+        private const val MAX_CHART_POINTS = 400
+        private const val CHART_CACHE_TTL_MILLIS = 10 * 60 * 1000L
 
         @Volatile
         private var instance: PriceRepository? = null

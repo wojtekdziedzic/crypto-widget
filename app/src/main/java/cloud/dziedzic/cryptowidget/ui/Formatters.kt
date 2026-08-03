@@ -13,10 +13,10 @@ object Formatters {
      * (grouping instead of decimals so BTC still fits on the widget).
      */
     fun price(value: Double, currency: Currency): String {
-        val number = if (value >= 1000) {
-            String.format(POLISH, "%,.0f", value)
-        } else {
-            String.format(POLISH, "%.2f", value)
+        val number = when {
+            value >= 1000 -> String.format(POLISH, "%,.0f", value)
+            value >= 1 -> String.format(POLISH, "%.2f", value)
+            else -> String.format(POLISH, "%.4f", value)
         }
         return currency.prefix + number
     }

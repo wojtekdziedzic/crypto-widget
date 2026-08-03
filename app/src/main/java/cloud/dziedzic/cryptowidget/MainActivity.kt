@@ -32,7 +32,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import cloud.dziedzic.cryptowidget.data.CachedPrice
+import cloud.dziedzic.cryptowidget.data.ChartRange
 import cloud.dziedzic.cryptowidget.data.Coin
 import cloud.dziedzic.cryptowidget.data.Currency
 import cloud.dziedzic.cryptowidget.data.PriceRepository
@@ -59,7 +59,6 @@ import cloud.dziedzic.cryptowidget.work.RefreshScheduler
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -100,13 +99,14 @@ class MainActivity : ComponentActivity() {
 private fun MainScreen(onAddWidget: () -> Unit) {
     val context = LocalContext.current
     val repository = remember { PriceRepository.get(context) }
-    val scope = rememberCoroutineScope()
 
     var coin by rememberSaveable { mutableStateOf(Coin.DEFAULT) }
     var currency by rememberSaveable { mutableStateOf(Currency.DEFAULT) }
+    var range by rememberSaveable { mutableStateOf(ChartRange.D7) }
     var chart by remember { mutableStateOf<List<Float>>(emptyList()) }
     var chartLoaded by remember { mutableStateOf(false) }
     var selectionRestored by rememberSaveable { mutableStateOf(false) }
+    var reloadTick by remember { mutableStateOf(0) }
 
     val cached by remember(coin, currency) { repository.cache.quoteFlow(coin, currency) }
         .collectAsStateWithLifecycle(initialValue = CachedPrice())
@@ -121,14 +121,20 @@ private fun MainScreen(onAddWidget: () -> Unit) {
         }
     }
 
-    LaunchedEffect(coin, currency, selectionRestored) {
+    LaunchedEffect(coin, currency, selectionRestored, reloadTick) {
         if (!selectionRestored) return@LaunchedEffect
         repository.configStore.saveAppSelection(
             cloud.dziedzic.cryptowidget.data.WidgetConfig(coin, currency),
         )
-        chartLoaded = false
         repository.refreshPair(coin, currency)
-        chart = repository.fetchChart(coin, currency)
+    }
+
+    LaunchedEffect(coin, currency, range, selectionRestored, reloadTick) {
+        if (!selectionRestored) return@LaunchedEffect
+        chartLoaded = false
+        // Debounce rapid switching; a cancelled effect never reaches the API.
+        kotlinx.coroutines.delay(400)
+        chart = repository.fetchChart(coin, currency, range)
         chartLoaded = true
     }
 
@@ -153,12 +159,12 @@ private fun MainScreen(onAddWidget: () -> Unit) {
                 onSelect = { currency = Currency.entries[it] },
             )
 
-            // 2. Chart
+            // 2. Chart with range selector
             Spacer(Modifier.height(24.dp))
-            Text(
-                text = stringResource(R.string.chart_7d),
-                style = MaterialTheme.typography.labelLarge,
-                color = BrandTextDim,
+            SegmentedRow(
+                options = ChartRange.entries.map { it.label },
+                selectedIndex = ChartRange.entries.indexOf(range),
+                onSelect = { range = ChartRange.entries[it] },
             )
             Spacer(Modifier.height(8.dp))
             Box(
@@ -207,7 +213,8 @@ private fun MainScreen(onAddWidget: () -> Unit) {
             Spacer(Modifier.height(28.dp))
             Button(
                 onClick = {
-                    scope.launch { repository.refreshPair(coin, currency) }
+                    // Bumping the tick re-runs both effects (pair quote + chart).
+                    reloadTick++
                     RefreshScheduler.refreshNow(context)
                 },
                 modifier = Modifier.fillMaxWidth(),

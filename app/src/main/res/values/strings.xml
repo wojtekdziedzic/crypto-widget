@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Kurs Krypto</string>
-    <string name="widget_label">Kurs Krypto</string>
+    <string name="app_name">Krypto</string>
+    <string name="widget_label">Krypto</string>
     <string name="widget_description">Kurs kryptowaluty, odświeżany co 30 minut</string>
     <string name="no_data" translatable="false">—</string>
     <string name="cd_coin_logo">Logo kryptowaluty</string>
     <string name="cd_refresh">Odśwież kurs</string>
     <string name="refresh_now">Odśwież teraz</string>
     <string name="add_widget">Dodaj widget</string>
-    <string name="add_widget_hint">Przytrzymaj palec na pustym miejscu ekranu głównego, wybierz \"Widgety\", znajdź \"Kurs Krypto\" i przeciągnij widget na ekran, albo użyj przycisku \"Dodaj widget\". Rozmiar widgetu zmienisz, przytrzymując go i przeciągając uchwyty ramki.</string>
+    <string name="add_widget_hint">Przytrzymaj palec na pustym miejscu ekranu głównego, wybierz \"Widgety\", znajdź \"Krypto\" i przeciągnij widget na ekran, albo użyj przycisku \"Dodaj widget\". Rozmiar widgetu zmienisz, przytrzymując go i przeciągając uchwyty ramki.</string>
     <string name="updated_at">Zaktualizowano: %1$s</string>
     <string name="never_updated">Brak danych, kliknij \"Odśwież teraz\"</string>
-    <string name="chart_7d">Wykres 7 dni</string>
-    <string name="chart_unavailable">Wykres niedostępny</string>
+    <string name="chart_unavailable">Wykres chwilowo niedostępny (limit darmowego API), spróbuj za minutę</string>
     <string name="config_title">Ustawienia widgetu</string>
     <string name="config_coin">Kryptowaluta</string>
     <string name="config_currency">Waluta</string>
