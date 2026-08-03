@@ -176,7 +176,7 @@ private fun MainScreen(onAddWidget: () -> Unit) {
                 contentAlignment = Alignment.Center,
             ) {
                 when {
-                    chart.size >= 2 -> PriceChart(chart, Modifier.padding(8.dp))
+                    chart.size >= 2 -> PriceChart(chart, currency, Modifier.padding(8.dp))
                     chartLoaded -> Text(
                         text = stringResource(R.string.chart_unavailable),
                         color = BrandTextDim,
