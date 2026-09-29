@@ -17,41 +17,77 @@ class PriceRepository private constructor(
 ) {
 
     /**
-     * Fetches quotes for every coin/currency pair used by any widget in one
-     * API call and stores them in the cache. On failure the cache is left
-     * untouched so widgets keep showing the last known values.
+     * Fetches quotes for every coin/currency pair used by any widget and
+     * stores them in the cache. Tries the batch simple/price endpoint first
+     * (one call for everything); since 2026-09 CoinGecko blocks it for
+     * keyless clients (403), so on failure each pair falls back to a quote
+     * derived from the 1-day chart, which remains open. On total failure the
+     * cache is left untouched so widgets keep showing the last known values.
      */
-    suspend fun refreshAll(): Result<Unit> = try {
+    suspend fun refreshAll(): Result<Unit> {
         val pairs = configStore.activePairs()
-        val ids = pairs.map { it.first.coinGeckoId }.distinct().joinToString(",")
-        val currencies = pairs.map { it.second.code }.distinct().joinToString(",")
-        val response = api.getSimplePrice(ids, currencies)
-        val updatedAt = System.currentTimeMillis()
-        for ((coin, currency) in pairs) {
-            val quote = response[coin.coinGeckoId] ?: continue
-            val price = quote[currency.code] ?: continue
-            cache.save(coin, currency, price, quote["${currency.code}_24h_change"], updatedAt)
+        try {
+            val ids = pairs.map { it.first.coinGeckoId }.distinct().joinToString(",")
+            val currencies = pairs.map { it.second.code }.distinct().joinToString(",")
+            val response = api.getSimplePrice(ids, currencies)
+            val updatedAt = System.currentTimeMillis()
+            var saved = 0
+            for ((coin, currency) in pairs) {
+                val quote = response[coin.coinGeckoId] ?: continue
+                val price = quote[currency.code] ?: continue
+                cache.save(coin, currency, price, quote["${currency.code}_24h_change"], updatedAt)
+                saved++
+            }
+            if (saved > 0) return Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "simple/price failed, deriving quotes from 1-day charts", e)
         }
-        Result.success(Unit)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.w(TAG, "Price refresh failed, keeping cached values", e)
-        Result.failure(e)
+        var failures = 0
+        for ((coin, currency) in pairs) {
+            if (!refreshPairFromChart(coin, currency)) failures++
+        }
+        return if (failures == 0) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("Chart-derived refresh failed for $failures pair(s)"))
+        }
     }
 
     /** Fetches and caches a single pair (used by the app for the viewed selection). */
-    suspend fun refreshPair(coin: Coin, currency: Currency): Result<Unit> = try {
-        val response = api.getSimplePrice(coin.coinGeckoId, currency.code)
-        val quote = response[coin.coinGeckoId] ?: error("Missing ${coin.coinGeckoId} in response")
-        val price = quote[currency.code] ?: error("Missing ${currency.code} price")
-        cache.save(coin, currency, price, quote["${currency.code}_24h_change"], System.currentTimeMillis())
-        Result.success(Unit)
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        Log.w(TAG, "Pair refresh failed", e)
-        Result.failure(e)
+    suspend fun refreshPair(coin: Coin, currency: Currency): Result<Unit> {
+        try {
+            val response = api.getSimplePrice(coin.coinGeckoId, currency.code)
+            val quote = response[coin.coinGeckoId] ?: error("Missing ${coin.coinGeckoId} in response")
+            val price = quote[currency.code] ?: error("Missing ${currency.code} price")
+            cache.save(coin, currency, price, quote["${currency.code}_24h_change"], System.currentTimeMillis())
+            return Result.success(Unit)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "simple/price failed, deriving quote from 1-day chart", e)
+        }
+        return if (refreshPairFromChart(coin, currency)) {
+            Result.success(Unit)
+        } else {
+            Result.failure(Exception("Chart-derived refresh failed for ${coin.symbol}/${currency.name}"))
+        }
+    }
+
+    /**
+     * Derives the current price and 24h change from the 1-day chart
+     * (last point is at most ~5 minutes old, the first is ~24h back).
+     * Reuses fetchChart, so it also warms the chart cache.
+     */
+    private suspend fun refreshPairFromChart(coin: Coin, currency: Currency): Boolean {
+        val points = fetchChart(coin, currency, ChartRange.D1)
+        if (points.size < 2) return false
+        val last = points.last().toDouble()
+        val first = points.first().toDouble()
+        val change24h = if (first > 0) (last - first) / first * 100 else null
+        cache.save(coin, currency, last, change24h, System.currentTimeMillis())
+        return true
     }
 
     private val chartCache =
