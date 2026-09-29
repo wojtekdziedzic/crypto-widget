@@ -39,3 +39,7 @@ Then:
 
 Release builds are signed via `keystore.properties` (not in the repo); without it
 `assembleRelease` produces an unsigned APK.
+
+## License
+
+[MIT](LICENSE)
