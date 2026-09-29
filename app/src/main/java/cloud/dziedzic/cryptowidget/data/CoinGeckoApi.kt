@@ -31,4 +31,21 @@ interface CoinGeckoApi {
         @Query("vs_currency") vsCurrency: String,
         @Query("days") days: Int,
     ): MarketChartResponse
+
+    // Same data served by the dziedzic.cloud caching proxy, which holds the
+    // CoinGecko API key server-side. Preferred since CoinGecko blocked
+    // keyless simple/price (2026-09); the direct endpoints stay as fallback.
+
+    @GET("https://dziedzic.cloud/crypto-proxy.php?action=price")
+    suspend fun getSimplePriceProxy(
+        @Query("ids") ids: String,
+        @Query("vs") vsCurrencies: String,
+    ): Map<String, Map<String, Double>>
+
+    @GET("https://dziedzic.cloud/crypto-proxy.php?action=chart")
+    suspend fun getMarketChartProxy(
+        @Query("id") coinGeckoId: String,
+        @Query("vs") vsCurrency: String,
+        @Query("days") days: Int,
+    ): MarketChartResponse
 }

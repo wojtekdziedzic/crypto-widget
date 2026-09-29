@@ -29,7 +29,7 @@ class PriceRepository private constructor(
         try {
             val ids = pairs.map { it.first.coinGeckoId }.distinct().joinToString(",")
             val currencies = pairs.map { it.second.code }.distinct().joinToString(",")
-            val response = api.getSimplePrice(ids, currencies)
+            val response = fetchSimplePrice(ids, currencies)
             val updatedAt = System.currentTimeMillis()
             var saved = 0
             for ((coin, currency) in pairs) {
@@ -58,7 +58,7 @@ class PriceRepository private constructor(
     /** Fetches and caches a single pair (used by the app for the viewed selection). */
     suspend fun refreshPair(coin: Coin, currency: Currency): Result<Unit> {
         try {
-            val response = api.getSimplePrice(coin.coinGeckoId, currency.code)
+            val response = fetchSimplePrice(coin.coinGeckoId, currency.code)
             val quote = response[coin.coinGeckoId] ?: error("Missing ${coin.coinGeckoId} in response")
             val price = quote[currency.code] ?: error("Missing ${currency.code} price")
             cache.save(coin, currency, price, quote["${currency.code}_24h_change"], System.currentTimeMillis())
@@ -73,6 +73,19 @@ class PriceRepository private constructor(
         } else {
             Result.failure(Exception("Chart-derived refresh failed for ${coin.symbol}/${currency.name}"))
         }
+    }
+
+    /** Proxy first (server-side key), direct CoinGecko as fallback. */
+    private suspend fun fetchSimplePrice(
+        ids: String,
+        currencies: String,
+    ): Map<String, Map<String, Double>> = try {
+        api.getSimplePriceProxy(ids, currencies)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        Log.w(TAG, "Proxy price fetch failed, trying CoinGecko directly", e)
+        api.getSimplePrice(ids, currencies)
     }
 
     /**
@@ -116,7 +129,14 @@ class PriceRepository private constructor(
         currency: Currency,
         range: ChartRange,
     ): List<Float>? = try {
-        val prices = api.getMarketChart(coin.coinGeckoId, currency.code, range.days).prices
+        val prices = try {
+            api.getMarketChartProxy(coin.coinGeckoId, currency.code, range.days).prices
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Log.w(TAG, "Proxy chart fetch failed, trying CoinGecko directly", e)
+            api.getMarketChart(coin.coinGeckoId, currency.code, range.days).prices
+        }
         val windowMillis = range.windowHours?.let { it * 3_600_000.0 }
         val filtered = if (windowMillis != null && prices.isNotEmpty()) {
             val cutoff = (prices.last().getOrNull(0) ?: 0.0) - windowMillis
